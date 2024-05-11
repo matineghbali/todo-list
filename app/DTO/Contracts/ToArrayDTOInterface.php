@@ -2,7 +2,8 @@
 
 namespace App\DTO\Contracts;
 
-use MongoDB\Laravel\Eloquent\Model;
+
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Interface ToArrayDTOInterface

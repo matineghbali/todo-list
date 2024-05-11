@@ -2,13 +2,14 @@
 
 namespace Tests\Unit\Services;
 
-use App\Models\User;
-use Tests\TestCase;
-use App\Models\Task;
+use App\DTO\ChangeStatusTaskDTO;
 use App\DTO\CreateTaskDTO;
 use App\DTO\UpdateTaskDTO;
+use App\Models\Task;
+use App\Models\User;
 use App\Services\TaskService;
-use App\DTO\ChangeStatusTaskDTO;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 /**
  * Class TaskServiceTest
@@ -17,14 +18,15 @@ use App\DTO\ChangeStatusTaskDTO;
  */
 class TaskServiceTest extends TestCase
 {
+    use RefreshDatabase;
 
     public function test_can_create_task_in_service_layer(): void
     {
-        $dto = new CreateTaskDTO(
-            title: fake()->word,
-            description: fake()->text,
-            user_ids: [User::factory()->create()],
-        );
+        $dto = $this->actingAs(User::factory()->create())->app->make( CreateTaskDTO::class,[
+            'title'=> fake()->word,
+            'description'=> fake()->text,
+            'user_ids'=> [User::factory()->create()->id],
+        ]);
 
         $task = $this->app->make(TaskService::class)
             ->createTask($dto);
@@ -45,10 +47,10 @@ class TaskServiceTest extends TestCase
         $task = Task::factory()
             ->create();
         $dto = new UpdateTaskDTO(
-            status: fake()->randomElements(Task::ALL_STATUSES),
+            status: fake()->randomElement(Task::ALL_STATUSES),
             title: fake()->word,
             description: fake()->text,
-            user_ids: [User::factory()->create()],
+            user_ids: [User::factory()->create()->id],
         );
 
         $responseTask = app()->make(TaskService::class)->updateTask($task, $dto);
@@ -70,10 +72,10 @@ class TaskServiceTest extends TestCase
     {
         $task = Task::factory()
             ->create([
-                'status' => fake()->randomElements(Task::ALL_STATUSES),
+                'status' => fake()->randomElement(Task::ALL_STATUSES),
             ]);
         $dto = new ChangeStatusTaskDTO(
-            status: fake()->randomElements(Task::ALL_STATUSES),
+            status: fake()->randomElement(Task::ALL_STATUSES),
         );
 
         $response = app()->make(TaskService::class)
@@ -93,7 +95,7 @@ class TaskServiceTest extends TestCase
 
         app()->make(TaskService::class)->delete($task);
 
-        $this->assertDatabaseMissing($task->getTable(), [
+        $this->assertSoftDeleted($task->getTable(), [
             'id' => $task->id,
         ]);
         $this->assertDatabaseMissing('task_user', [

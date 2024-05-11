@@ -41,7 +41,7 @@ class TaskController extends Controller
     {
         return $this->successResponse(
             trans('messages.successfully'),
-            $this->taskService->getList($request, resource: TaskResource::class)
+            (array)$this->taskService->getList($request)
         ,200);
     }
 
@@ -80,7 +80,7 @@ class TaskController extends Controller
     {
         return $this->successResponse(
             trans('messages.successfully'),
-            $this->taskService->getView($task, TaskResource::class)
+            (array)$this->taskService->getView($task, TaskResource::class)
         );
     }
 

@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Task;
@@ -13,12 +15,13 @@ use App\Models\Task;
  */
 final class TaskTest extends TestCase
 {
+    use RefreshDatabase;
     public function test_can_get_tasks_list(): void
     {
         Task::factory()
             ->create();
 
-        $response = $this->get(
+        $response = $this->actingAs(User::factory()->create())->get(
             route('tasks.index')
         );
 
@@ -31,11 +34,11 @@ final class TaskTest extends TestCase
         $payload = [
             'title' => fake()->word,
             'description' => fake()->text,
-            'user_ids' => [User::factory()->create()],
+            'user_ids' => [User::factory()->create()->id],
         ];
 
-        $response = $this->post(
-            route('tasks.create'),
+        $response = $this->actingAs(User::factory()->create())->post(
+            route('tasks.store'),
             $payload
         );
 
@@ -56,8 +59,8 @@ final class TaskTest extends TestCase
         $task = Task::factory()
             ->create();
 
-        $response = $this->get(
-            route('tasks.view', ['task' => $task]),
+        $response = $this->actingAs(User::factory()->create())->get(
+            route('tasks.show', ['task' => $task]),
         );
 
         $response->assertOk();
@@ -69,13 +72,13 @@ final class TaskTest extends TestCase
         $task = Task::factory()
             ->create();
         $payload = [
-            'status' => fake()->randomElements(Task::ALL_STATUSES),
+            'status' => fake()->randomElement(Task::ALL_STATUSES),
             'title' => fake()->word,
             'description' => fake()->text,
-            'user_ids' => [User::factory()->create()],
+            'user_ids' => [User::factory()->create()->id],
         ];
 
-        $response = $this->put(
+        $response = $this->actingAs(User::factory()->create())->put(
             route('tasks.update', ['task' => $task]),
             $payload
         );
@@ -98,13 +101,13 @@ final class TaskTest extends TestCase
     {
         $task = Task::factory()
             ->create([
-                'status' => fake()->randomElements(Task::ALL_STATUSES),
+                'status' => fake()->randomElement(Task::ALL_STATUSES),
             ]);
         $payload = [
-            'status' => fake()->randomElements(Task::ALL_STATUSES),
+            'status' => fake()->randomElement(Task::ALL_STATUSES),
         ];
 
-        $response = $this->put(
+        $response = $this->actingAs(User::factory()->create())->put(
             route('tasks.status', ['task' => $task]),
             $payload
         );
@@ -122,13 +125,13 @@ final class TaskTest extends TestCase
         $task = Task::factory()
             ->create();
 
-        $response = $this->delete(
-            route('tasks.delete', ['task' => $task]),
+        $response = $this->actingAs(User::factory()->create())->delete(
+            route('tasks.destroy', ['task' => $task]),
         );
 
         $response->assertOk();
         $this->assertEquals(trans('messages.successfully'), $response['message']);
-        $this->assertDatabaseMissing($task->getTable(), [
+        $this->assertSoftDeleted($task->getTable(), [
             'id' => $task->id,
         ]);
         $this->assertDatabaseMissing('task_user', [
